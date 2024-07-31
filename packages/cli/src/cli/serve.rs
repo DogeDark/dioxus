@@ -6,7 +6,7 @@ use crate::{
 use anyhow::Context;
 use build::Build;
 use dioxus_cli_config::AddressArguments;
-use std::ops::Deref;
+use std::{env, ops::Deref};
 
 use super::*;
 
@@ -93,15 +93,17 @@ impl Serve {
         // Resolve the build arguments
         self.build_arguments.resolve(crate_config)?;
 
-        // Since this is a serve, adjust the outdir to be target/dx-dist/<crate name>
-        let mut dist_dir = crate_config.workspace_dir().join("target").join("dx-dist");
+        // Since this is a serve, adjust the outdir to be target/dx-dist/<crate name>/<platform>
+        let target_dir = env::var("CARGO_TARGET_DIR").unwrap_or("target".to_string());
+        let mut dist_dir = crate_config.workspace_dir().join(target_dir).join("dx-dist");
 
         if crate_config.target.is_example() {
             dist_dir = dist_dir.join("examples");
         }
 
-        crate_config.dioxus_config.application.out_dir =
-            dist_dir.join(crate_config.executable_name());
+        crate_config.dioxus_config.application.out_dir = dist_dir
+            .join(crate_config.executable_name())
+            .join(self.platform().feature_name());
 
         Ok(())
     }
